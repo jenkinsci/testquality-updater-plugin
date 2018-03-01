@@ -33,7 +33,8 @@ public class TestResult {
     public int blocked;
     public int failed;
     public String time;
-    public String start_time;
-    public String end_time;
+    //not used
+    //public String start_time;
+    //public String end_time;
     public String run_url;
 }

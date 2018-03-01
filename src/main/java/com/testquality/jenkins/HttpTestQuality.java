@@ -191,12 +191,13 @@ public class HttpTestQuality {
         if (obj.has("time")) {
             result.time = obj.getString("time");
         }
-        if (obj.has("start_time")) {
-            result.start_time = obj.getString("start_time");
-        }
-        if (obj.has("end_time")) {
-            result.end_time = obj.getString("end_time");
-        }
+        // not used
+        //if (obj.has("start_time")) {
+        //    result.start_time = obj.getString("start_time");
+        //}
+        //if (obj.has("end_time")) {
+        //    result.end_time = obj.getString("end_time");
+        //}
         if (obj.has("run_url")) {
             result.run_url = obj.getString("run_url");
         }

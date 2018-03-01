@@ -102,7 +102,7 @@ public class TestQualityNotifier extends Notifier {
                 // don't continue.
                 return true;
             }
-            listener.getLogger().println("Starting test upload to TestQuality");
+            listener.getLogger().println("Starting test upload to TestQuality for" + this.project);
             
             TestResult result = workspace.act(new ParseResultCallable(expandTestResults, 
                     buildTime, 

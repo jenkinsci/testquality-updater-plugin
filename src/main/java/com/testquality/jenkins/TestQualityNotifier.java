@@ -74,11 +74,27 @@ public class TestQualityNotifier extends Notifier {
     }
 
     @DataBoundConstructor
-    public TestQualityNotifier(String projectIn, String planIn, String milestoneIn, String testResultsIn) {
-        this.project = projectIn;
-        this.plan = planIn;
-        this.milestone = milestoneIn;
-        this.testResults = testResultsIn;
+    public TestQualityNotifier(String project, String plan, String milestone, String testResults) {
+        this.project = project;
+        this.plan = plan;
+        this.milestone = milestone;
+        this.testResults = testResults;
+    }
+    
+    public String getProject() {
+        return project;
+    }
+    
+    public String getPlan() {
+        return plan;
+    }
+    
+    public String getMilestone() {
+        return milestone;
+    }
+    
+    public String getTestResults() {
+        return testResults;
     }
 
     @Override

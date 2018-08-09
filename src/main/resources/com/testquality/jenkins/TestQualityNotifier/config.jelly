@@ -34,7 +34,7 @@ THE SOFTWARE.
     <f:entry title="Milestone" field="milestone">
       <f:select />
     </f:entry>
-    <f:entry title="Test Results XMLs&#160;" field="testResults">
+    <f:entry title="Test Results XMLs" field="testResults">
       <f:textbox />
     </f:entry>
 </j:jelly>

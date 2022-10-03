@@ -336,6 +336,7 @@ public class TestQualityNotifier extends Notifier {
                     || project.trim().equals("-1")) {
                 return items;
             }
+            items.add("Optionally Pick Cycle", "-1");
             HttpTestQuality testQuality = new HttpTestQuality();
             try {
                 testQuality.connect(this.url, this.username, this.password);

@@ -147,7 +147,13 @@ public class HttpTestQuality {
         }
                 
         MediaType mediaType = MediaType.parse("text/xml");
-        String url = this.tqUrl + "/api/plan/" + planId + "/junit_xml";
+        String url;
+
+        if (planId.equals("-1")) {
+            url = this.tqUrl + "/api/junit_xml";
+        } else {
+            url = this.tqUrl + "/api/plan/" + planId + "/junit_xml";
+        }
         
         MultipartBody.Builder requestBodyBuilder = new MultipartBody.Builder();
         requestBodyBuilder.setType(MultipartBody.FORM);

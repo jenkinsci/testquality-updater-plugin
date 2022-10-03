@@ -28,7 +28,7 @@ THE SOFTWARE.
     <f:entry title="Project" field="project">
         <f:select />
     </f:entry>
-    <f:entry title="Test Plan" field="plan">
+    <f:entry title="Cycle" field="plan">
       <f:select />
     </f:entry>
     <f:entry title="Milestone" field="milestone">

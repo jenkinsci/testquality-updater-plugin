@@ -24,21 +24,19 @@ THE SOFTWARE.
 -->
 
 <?jelly escape-by-default='true'?>
-<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
-    <f:section title="TestQuality Updater">   
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form" xmlns:c="/lib/credentials">
+    <f:section title="TestQuality Updater">
 
         <f:entry title="TestQuality Url&#160;" field="url">
             <f:textbox default="${descriptor.defaultUrl}" />
         </f:entry>
-        <f:entry title="Username" field="username">
-          <f:textbox />
+        <f:entry field="credentialsId" title="Credentials">
+            <c:select/>
         </f:entry>
-        <f:entry title="Password" field="password">
-          <f:password />
-        </f:entry>
+
 
         <f:validateButton
             title="Test Connection" progress="Please Wait While Testing..."
-            method="testConnection" with="url,username,password" />
-    </f:section>   
+            method="testConnection" with="url,credentialsId" />
+    </f:section>
 </j:jelly>

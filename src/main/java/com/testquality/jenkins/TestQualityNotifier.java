@@ -23,11 +23,8 @@
  */
 package com.testquality.jenkins;
 
-import hudson.AbortException;
-import hudson.Extension;
-import hudson.FilePath;
-import hudson.Launcher;
-import hudson.Util;
+import com.testquality.jenkins.exception.ClientException;
+import hudson.*;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
@@ -39,14 +36,7 @@ import hudson.tasks.Notifier;
 import hudson.tasks.Publisher;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import jenkins.MasterToSlaveFileCallable;
-import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.apache.tools.ant.DirectoryScanner;
 import org.apache.tools.ant.types.FileSet;
@@ -54,7 +44,13 @@ import org.json.JSONException;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
-import org.kohsuke.stapler.StaplerRequest;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -120,14 +116,14 @@ public class TestQualityNotifier extends Notifier {
             }
             listener.getLogger().println("Starting test upload to TestQuality for" + this.project);
             
-            TestResult result = workspace.act(new ParseResultCallable(expandTestResults, 
-                    buildTime, 
-                    timeOnMaster, 
-                    this.getDescriptor().getUrl(), 
-                    this.getDescriptor().getUsername(),
-                    this.getDescriptor().getPassword(),
-                    this.plan,
-                    this.milestone));
+            TestResult result = workspace.act(
+                    new ParseResultCallable(
+                            expandTestResults,
+                            buildTime,
+                            timeOnMaster,
+                            this.plan,
+                            this.milestone)
+            );
         
             long time = System.currentTimeMillis() - timeOnMaster;
             if (result.total > 0) {
@@ -156,26 +152,17 @@ public class TestQualityNotifier extends Notifier {
         private final String testResults;
         private final long buildTime;
         private final long nowMaster;
-        private final String url;
-        private final String username;
-        private final String password;
         private final String plan;
         private final String milestone;
         
         private ParseResultCallable(String testResults, 
                 long buildTime, 
                 long nowMaster,
-                String url,
-                String username,
-                String password,
                 String plan,
                 String milestone) {
             this.testResults = testResults;
             this.buildTime = buildTime;
-            this.nowMaster = nowMaster; 
-            this.url = url;
-            this.username = username;
-            this.password = password;
+            this.nowMaster = nowMaster;
             this.plan = plan;
             this.milestone = milestone;
         }
@@ -203,8 +190,8 @@ public class TestQualityNotifier extends Notifier {
                         //parsed = true;
                     }
                 }
-                HttpTestQuality testQuality = new HttpTestQuality();
-                testQuality.connect(this.url, this.username, this.password);
+
+                HttpTestQuality testQuality = TestQualityClientFactory.create();
                 return testQuality.uploadFiles(listFiles, this.plan, this.milestone);
             } 
             return result;
@@ -216,20 +203,15 @@ public class TestQualityNotifier extends Notifier {
     
     @Extension
     public static class DescriptorImpl extends BuildStepDescriptor<Publisher> {
-        public static final String DEFAULT_URL = "https://api.testquality.com";
         public static final String NO_CONNECTION = "Please fill in connection details in Manage Jenkins -> Configure System";
         public static final String DISPLAY_NAME = "TestQuality Updater";
         private static final Logger LOGGER = Logger.getLogger("TestQualityPlugin.log");
-        private String url;
-        private String username;
-        private String password;
         
         /**
          * In order to load the persisted global configuration, you have to 
          * call load() in the constructor.
          */
         public DescriptorImpl() {
-            this.url = DescriptorImpl.DEFAULT_URL;
             load();
         }
         
@@ -261,54 +243,23 @@ public class TestQualityNotifier extends Notifier {
             }
         }
         
-        @Override
-        public boolean configure(StaplerRequest req, JSONObject formData) throws FormException {
-            // To persist global configuration information,
-            // set that to properties and call save().
-            this.url = formData.getString("url");
-            this.username = formData.getString("username");
-            this.password = formData.getString("password");
-            // ^Can also use req.bindJSON(this, formData);
-            //  (easier when there are many fields; need set* methods for this, like setUseFrench)
-            save();
-            return super.configure(req,formData);
-        }
-        
-        
-        
-        public String getUrl() {
-            return url;
-        }
-
-        public String getUsername() {
-            return username;
-        }
-
-        public String getPassword() {
-            return password;
-        }
-        
-        public FormValidation doCheckProject(@QueryParameter("project") String project) throws IOException {
-            if (StringUtils.isBlank(url) 
-                || StringUtils.isBlank(username) 
-                || StringUtils.isBlank(password) ) {
+        public FormValidation doCheckProject(@QueryParameter("project") String project) {
+            TestQualityGlobalConfiguration configuration = TestQualityGlobalConfiguration.get();
+            if (!configuration.isCredentialsExist()) {
                     return FormValidation.error(NO_CONNECTION);
             }
-            HttpTestQuality testQuality = new HttpTestQuality();
             try {
-                testQuality.connect(this.url, this.username, this.password);
-            } catch (JSONException | IOException | HttpException e) {
+                TestQualityClientFactory.create();
+            } catch (ClientException e) {
                 return FormValidation.error("Connection error : " + e.getMessage());
             }
             return FormValidation.ok();
         }
         
-        public ListBoxModel doFillProjectItems(@QueryParameter("project") String savedProject) throws FormValidation {
+        public ListBoxModel doFillProjectItems(@QueryParameter("project") String savedProject) {
             ListBoxModel items = new ListBoxModel();
-
-            if (StringUtils.isBlank(url) 
-                || StringUtils.isBlank(username) 
-                || StringUtils.isBlank(password) ) {
+            TestQualityGlobalConfiguration configuration = TestQualityGlobalConfiguration.get();
+            if (!configuration.isCredentialsExist()) {
                     return items;
             }
             
@@ -316,11 +267,10 @@ public class TestQualityNotifier extends Notifier {
                 items.add(new ListBoxModel.Option("", "", true));
             }
 
-            HttpTestQuality testQuality = new HttpTestQuality();
             try {
-                testQuality.connect(this.url, this.username, this.password);
+                HttpTestQuality testQuality = TestQualityClientFactory.create();
                 testQuality.getList("project", "PJ", items, savedProject, "");
-            } catch (JSONException | IOException | HttpException e) {
+            } catch (JSONException | IOException | HttpException | ClientException e) {
                 LOGGER.log(Level.SEVERE, "ERROR: Filling List Box, " + e.getMessage(), e);
                 //Don't think this does anything throw FormValidation.error("Connection error : " + e.getMessage(), e);
             }
@@ -336,11 +286,10 @@ public class TestQualityNotifier extends Notifier {
                     || project.trim().equals("-1")) {
                 return items;
             }
-            HttpTestQuality testQuality = new HttpTestQuality();
             try {
-                testQuality.connect(this.url, this.username, this.password);
+                HttpTestQuality testQuality = TestQualityClientFactory.create();
                 testQuality.getList("plan", "P", items, savedPlan, project);
-            } catch (JSONException | IOException | HttpException e) {
+            } catch (JSONException | IOException | HttpException | ClientException e) {
                 LOGGER.log(Level.SEVERE, "ERROR: Filling List Box, " + e.getMessage(), e);
                 //Don't think this does anything throw FormValidation.error("Connection error : " + e.getMessage(), e);
             }
@@ -360,11 +309,10 @@ public class TestQualityNotifier extends Notifier {
             
             items.add("Optionally Pick Milestone", "-1");
             
-            HttpTestQuality testQuality = new HttpTestQuality();
             try {
-                testQuality.connect(this.url, this.username, this.password);
+                HttpTestQuality testQuality = TestQualityClientFactory.create();
                 testQuality.getList("milestone", "M", items, savedMilestone, project);
-            } catch (JSONException | IOException | HttpException e) {
+            } catch (JSONException | IOException | HttpException | ClientException e) {
                 LOGGER.log(Level.SEVERE, "ERROR: Filling List Box, " + e.getMessage(), e);
                 //Don't think this does anything throw FormValidation.error("Connection error : " + e.getMessage(), e);
             }

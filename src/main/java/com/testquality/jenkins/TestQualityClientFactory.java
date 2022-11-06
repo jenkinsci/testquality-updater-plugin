@@ -11,7 +11,7 @@ public class TestQualityClientFactory {
         //
     }
 
-    public static HttpTestQuality create(String url, String username ,String password) {
+    public static TestQualityClient create(String url, String username ,String password) {
         HttpTestQuality testQuality = new HttpTestQuality();
         try {
             testQuality.connect(url, username, password);
@@ -21,7 +21,7 @@ public class TestQualityClientFactory {
         return testQuality;
     }
 
-    public static HttpTestQuality create() {
+    public static TestQualityClient create() {
         TestQualityGlobalConfiguration configuration = TestQualityGlobalConfiguration.get();
         return create(configuration.getUrl(), configuration.getUsername(), configuration.getPassword());
     }

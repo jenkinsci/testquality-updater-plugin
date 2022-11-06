@@ -120,7 +120,7 @@ public class TestResultsUploader {
                     }
                 }
 
-                HttpTestQuality testQuality = TestQualityClientFactory.create();
+                TestQualityClient testQuality = TestQualityClientFactory.create();
                 return testQuality.uploadFiles(listFiles, this.plan, this.milestone);
             }
             return result;

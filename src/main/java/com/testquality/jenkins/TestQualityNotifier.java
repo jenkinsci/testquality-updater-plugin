@@ -23,8 +23,6 @@
  */
 package com.testquality.jenkins;
 
-import com.testquality.jenkins.exception.ClientException;
-import com.testquality.jenkins.exception.HttpException;
 import hudson.AbortException;
 import hudson.Extension;
 import hudson.FilePath;
@@ -36,16 +34,9 @@ import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Notifier;
 import hudson.tasks.Publisher;
-import hudson.util.FormValidation;
-import hudson.util.ListBoxModel;
-import org.apache.commons.lang.StringUtils;
-import org.json.JSONException;
-import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.QueryParameter;
 
 import java.io.IOException;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -107,7 +98,7 @@ public class TestQualityNotifier extends Notifier {
     }
 
     @Extension
-    public static class DescriptorImpl extends BuildStepDescriptor<Publisher> {
+    public static class DescriptorImpl extends BuildStepDescriptor<Publisher> implements FormValidationDelegator {
         public static final String NO_CONNECTION = "Please fill in connection details in Manage Jenkins -> Configure System";
         public static final String DISPLAY_NAME = "TestQuality Updater";
         private static final Logger LOGGER = Logger.getLogger("TestQualityPlugin.log");
@@ -133,99 +124,6 @@ public class TestQualityNotifier extends Notifier {
         @Override
         public boolean isApplicable(Class<? extends AbstractProject> jobType) {
             return true;
-        }
-        
-        public FormValidation doCheckProject(@QueryParameter("project") String project) {
-            TestQualityGlobalConfiguration configuration = TestQualityGlobalConfiguration.get();
-            if (!configuration.isCredentialsExist()) {
-                    return FormValidation.error(NO_CONNECTION);
-            }
-            try {
-                TestQualityClientFactory.create();
-            } catch (ClientException e) {
-                return FormValidation.error("Connection error : " + e.getMessage());
-            }
-            return FormValidation.ok();
-        }
-        
-        public ListBoxModel doFillProjectItems(@QueryParameter("project") String savedProject) {
-            ListBoxModel items = new ListBoxModel();
-            TestQualityGlobalConfiguration configuration = TestQualityGlobalConfiguration.get();
-            if (!configuration.isCredentialsExist()) {
-                    return items;
-            }
-            
-            if (StringUtils.isBlank(savedProject)) {
-                items.add(new ListBoxModel.Option("", "", true));
-            }
-
-            try {
-                HttpTestQuality testQuality = TestQualityClientFactory.create();
-                testQuality.getList("project", "PJ", items, savedProject, "");
-            } catch (JSONException | IOException | HttpException | ClientException e) {
-                LOGGER.log(Level.SEVERE, "ERROR: Filling List Box, " + e.getMessage(), e);
-                //Don't think this does anything throw FormValidation.error("Connection error : " + e.getMessage(), e);
-            }
-            return items;
-	}
-        
-        public ListBoxModel doFillPlanItems(
-			@QueryParameter String project,
-                        @QueryParameter("plan") String savedPlan) {
-            ListBoxModel items = new ListBoxModel();
-
-            if (StringUtils.isBlank(project)
-                    || project.trim().equals("-1")) {
-                return items;
-            }
-            try {
-                HttpTestQuality testQuality = TestQualityClientFactory.create();
-                testQuality.getList("plan", "P", items, savedPlan, project);
-            } catch (JSONException | IOException | HttpException | ClientException e) {
-                LOGGER.log(Level.SEVERE, "ERROR: Filling List Box, " + e.getMessage(), e);
-                //Don't think this does anything throw FormValidation.error("Connection error : " + e.getMessage(), e);
-            }
-            return items;
-        }
-        
-        public ListBoxModel doFillMilestoneItems(
-			@QueryParameter String project,
-                        @QueryParameter("milestone") String savedMilestone) {
-            ListBoxModel items = new ListBoxModel();
-
-            if (StringUtils.isBlank(project)
-                    || project.trim().equals(NO_CONNECTION)
-                    || project.trim().equals("-1")) {
-                return items;
-            }
-            
-            items.add("Optionally Pick Milestone", "-1");
-            
-            try {
-                HttpTestQuality testQuality = TestQualityClientFactory.create();
-                testQuality.getList("milestone", "M", items, savedMilestone, project);
-            } catch (JSONException | IOException | HttpException | ClientException e) {
-                LOGGER.log(Level.SEVERE, "ERROR: Filling List Box, " + e.getMessage(), e);
-                //Don't think this does anything throw FormValidation.error("Connection error : " + e.getMessage(), e);
-            }
-            return items;
-        }
-        
-        /**
-         * Performs on-the-fly validation on the file mask wildcard.
-         * @param project Project.
-         * @param value File mask to validate.
-         *
-         * @return the validation result.
-         * @throws IOException if an error occurs.
-         */
-        public FormValidation doCheckTestResults(
-                @AncestorInPath AbstractProject project,
-                @QueryParameter String value) throws IOException {
-            if (project == null) {
-                return FormValidation.ok();
-            }
-            return FilePath.validateFileMask(project.getSomeWorkspace(), value);
         }
                 
     }

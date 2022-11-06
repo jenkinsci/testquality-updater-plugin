@@ -66,8 +66,7 @@ public class TestQualityStep extends Step {
         }
     }
 
-
-    public static class Execution extends SynchronousNonBlockingStepExecution<Boolean> {
+    public static class Execution extends SynchronousNonBlockingStepExecution<Boolean> implements FormValidationDelegator {
 
         protected transient TestQualityStep step;
 

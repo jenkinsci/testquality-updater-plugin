@@ -25,29 +25,22 @@ package com.testquality.jenkins;
 
 import com.testquality.jenkins.exception.HttpException;
 import hudson.util.ListBoxModel;
-import java.io.File;
-import okhttp3.FormBody;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
-import java.io.IOException;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-import okhttp3.MediaType;
-import okhttp3.MultipartBody;
-import okhttp3.RequestBody;
-import org.json.JSONObject;
-
-
+import okhttp3.*;
 import org.apache.commons.lang.StringUtils;
 import org.json.JSONArray;
 import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  *
  * @author jamespitts
  */
-public class HttpTestQuality {
+public class HttpTestQuality implements TestQualityClient {
 
     /**
      *

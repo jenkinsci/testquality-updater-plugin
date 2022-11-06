@@ -135,19 +135,6 @@ public class TestQualityNotifier extends Notifier {
             return true;
         }
         
-        public FormValidation doTestConnection(
-            @QueryParameter("url") String url,
-            @QueryParameter("username") String username,
-            @QueryParameter("password") String password) {
-            try {
-                HttpTestQuality testQuality = new HttpTestQuality();
-                testQuality.connect(url, username, password);
-                return FormValidation.ok("Successful Connection");
-            } catch (JSONException | IOException | HttpException e) {
-                return FormValidation.error("Connection error : " + e.getMessage());
-            }
-        }
-        
         public FormValidation doCheckProject(@QueryParameter("project") String project) {
             TestQualityGlobalConfiguration configuration = TestQualityGlobalConfiguration.get();
             if (!configuration.isCredentialsExist()) {

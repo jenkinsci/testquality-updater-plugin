@@ -24,31 +24,26 @@
 package com.testquality.jenkins;
 
 import com.testquality.jenkins.exception.ClientException;
-import hudson.*;
+import hudson.AbortException;
+import hudson.Extension;
+import hudson.FilePath;
+import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
-import hudson.model.Result;
-import hudson.remoting.VirtualChannel;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Notifier;
 import hudson.tasks.Publisher;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
-import jenkins.MasterToSlaveFileCallable;
 import org.apache.commons.lang.StringUtils;
-import org.apache.tools.ant.DirectoryScanner;
-import org.apache.tools.ant.types.FileSet;
 import org.json.JSONException;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 
-import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -99,108 +94,17 @@ public class TestQualityNotifier extends Notifier {
     }
         
     @Override
-    public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws IOException, AbortException {
+    public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws IOException {
         FilePath workspace = build.getWorkspace();
         if (workspace == null) {
             throw new AbortException("no workspace for " + build);
         }
-        try {
-            final String expandTestResults = build.getEnvironment(listener).expand(this.testResults);
-            final long buildTime = build.getTimestamp().getTimeInMillis();
-            final long timeOnMaster = System.currentTimeMillis();
-            
-            if (build.getResult() == Result.FAILURE) {
-                // most likely a build failed before it gets to the test phase.
-                // don't continue.
-                return true;
-            }
-            listener.getLogger().println("Starting test upload to TestQuality for" + this.project);
-            
-            TestResult result = workspace.act(
-                    new ParseResultCallable(
-                            expandTestResults,
-                            buildTime,
-                            timeOnMaster,
-                            this.plan,
-                            this.milestone)
-            );
-        
-            long time = System.currentTimeMillis() - timeOnMaster;
-            if (result.total > 0) {
-                listener.getLogger().println(String.format("Of %d tests, %d passed, %d failed, %d skipped, tests ran in %s seconds", 
-                        result.total, result.passed, result.failed, result.blocked, result.time));
-            }
-            if (!StringUtils.isBlank(result.run_url)) {
-                //listener.getLogger().println(String.format("View Test Run Result at %s", 
-                //        result.run_url));
-                listener.hyperlink(result.run_url, "View Test Run Result (" + result.run_url + ")\n");
-            }
-            listener.getLogger().println(String.format("TestQuality Upload finished in %sms", time));
-        } catch (InterruptedException e) {
-            listener.getLogger().println("Interupted, " + e.getMessage());
-            return false;
-        } catch (JSONException | IOException | HttpException e) {
-            listener.getLogger().println(e.getMessage());
-            return false;
-        }
 
-        return true;
+        TestResultsUploader resultsUploader = new TestResultsUploader(plan, milestone, testResults, project);
+
+        return resultsUploader.upload(listener, build, workspace);
     }
 
-
-    private static final class ParseResultCallable extends MasterToSlaveFileCallable<TestResult> {
-        private final String testResults;
-        private final long buildTime;
-        private final long nowMaster;
-        private final String plan;
-        private final String milestone;
-        
-        private ParseResultCallable(String testResults, 
-                long buildTime, 
-                long nowMaster,
-                String plan,
-                String milestone) {
-            this.testResults = testResults;
-            this.buildTime = buildTime;
-            this.nowMaster = nowMaster;
-            this.plan = plan;
-            this.milestone = milestone;
-        }
-
-        @Override
-        public TestResult invoke(File ws, VirtualChannel channel) throws IOException {
-            final long nowSlave = System.currentTimeMillis();
-            List<File> listFiles = new ArrayList<>();
-            
-            FileSet fs = Util.createFileSet(ws, testResults);
-            DirectoryScanner ds = fs.getDirectoryScanner();
-            TestResult result = new TestResult();
-
-            String[] files = ds.getIncludedFiles();
-            if (files.length > 0) {
-                
-                File baseDir = ds.getBasedir();
-                //result = new TestResult(buildTime + (nowSlave - nowMaster), ds, keepLongStdio);
-                for (String value : files) {
-                    File reportFile = new File(baseDir, value);
-                    // only count files that were actually updated during this build
-                    if (this.buildTime + (nowSlave - this.nowMaster) - 3000/*error margin*/ <= reportFile.lastModified()) {
-                        listFiles.add(reportFile);
-                        //parsePossiblyEmpty(reportFile);
-                        //parsed = true;
-                    }
-                }
-
-                HttpTestQuality testQuality = TestQualityClientFactory.create();
-                return testQuality.uploadFiles(listFiles, this.plan, this.milestone);
-            } 
-            return result;
-        }
-    }
-        
-    
-
-    
     @Extension
     public static class DescriptorImpl extends BuildStepDescriptor<Publisher> {
         public static final String NO_CONNECTION = "Please fill in connection details in Manage Jenkins -> Configure System";

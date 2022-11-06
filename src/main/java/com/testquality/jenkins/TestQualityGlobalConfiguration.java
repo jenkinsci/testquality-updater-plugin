@@ -58,7 +58,7 @@ public class TestQualityGlobalConfiguration extends jenkins.model.GlobalConfigur
             validateInput(username, "Username cannot be empty");
             validateInput(password, "Password cannot be empty");
 
-            TestQualityClientFactory.create();
+            TestQualityClientFactory.create(url, username, password);
             return FormValidation.ok("Successful Connection");
         } catch (FormValidation fv) {
             return fv;

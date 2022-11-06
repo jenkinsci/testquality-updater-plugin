@@ -1,0 +1,15 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form">
+    <f:entry title="Project" field="project">
+        <f:select />
+    </f:entry>
+    <f:entry title="Test Plan" field="plan">
+        <f:select />
+    </f:entry>
+    <f:entry title="Milestone" field="milestone">
+        <f:select />
+    </f:entry>
+    <f:entry title="Test Results XMLs" field="testResults">
+        <f:textbox />
+    </f:entry>
+</j:jelly>

@@ -24,6 +24,7 @@
 package com.testquality.jenkins;
 
 import com.testquality.jenkins.exception.ClientException;
+import com.testquality.jenkins.exception.HttpException;
 import hudson.AbortException;
 import hudson.Extension;
 import hudson.FilePath;

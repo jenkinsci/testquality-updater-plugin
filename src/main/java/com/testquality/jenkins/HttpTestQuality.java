@@ -23,6 +23,7 @@
  */
 package com.testquality.jenkins;
 
+import com.testquality.jenkins.exception.HttpException;
 import hudson.util.ListBoxModel;
 import java.io.File;
 import okhttp3.FormBody;

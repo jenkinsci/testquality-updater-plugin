@@ -1,6 +1,7 @@
 package com.testquality.jenkins;
 
 import com.testquality.jenkins.exception.ClientException;
+import com.testquality.jenkins.exception.HttpException;
 
 import java.io.IOException;
 

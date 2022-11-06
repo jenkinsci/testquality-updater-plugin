@@ -1,5 +1,6 @@
 package com.testquality.jenkins;
 
+import com.testquality.jenkins.exception.HttpException;
 import hudson.FilePath;
 import hudson.Util;
 import hudson.model.Result;

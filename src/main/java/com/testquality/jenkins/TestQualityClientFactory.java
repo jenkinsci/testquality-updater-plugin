@@ -1,5 +1,7 @@
 package com.testquality.jenkins;
 
+import com.testquality.jenkins.credentials.TestQualityBasicCredentials;
+import com.testquality.jenkins.credentials.TestQualityCredentialsProvider;
 import com.testquality.jenkins.exception.ClientException;
 import com.testquality.jenkins.exception.HttpException;
 
@@ -11,10 +13,10 @@ public class TestQualityClientFactory {
         //
     }
 
-    public static TestQualityClient create(String url, String username ,String password) {
+    public static TestQualityClient create(String url, TestQualityCredentialsProvider credentialsProvider) {
         HttpTestQuality testQuality = new HttpTestQuality();
         try {
-            testQuality.connect(url, username, password);
+            testQuality.connect(url, credentialsProvider.resolve());
         } catch (IOException | HttpException e) {
             throw new ClientException(e);
         }
@@ -23,7 +25,10 @@ public class TestQualityClientFactory {
 
     public static TestQualityClient create() {
         TestQualityGlobalConfiguration configuration = TestQualityGlobalConfiguration.get();
-        return create(configuration.getUrl(), configuration.getUsername(), configuration.getPassword());
+        TestQualityCredentialsProvider credentialsProvider = () -> new TestQualityBasicCredentials(
+                configuration.getUsername(), configuration.getPassword()
+        );
+        return create(configuration.getUrl(), credentialsProvider);
     }
 
 }

@@ -23,6 +23,7 @@
  */
 package com.testquality.jenkins;
 
+import com.testquality.jenkins.credentials.TestQualityCredentials;
 import com.testquality.jenkins.exception.HttpException;
 import hudson.util.ListBoxModel;
 import okhttp3.*;
@@ -66,14 +67,14 @@ public class HttpTestQuality implements TestQualityClient {
         }
     }
     
-    public void connect(String url, String username, String password) throws IOException, JSONException, HttpException {
+    public void connect(String url, TestQualityCredentials credentials) throws IOException, JSONException, HttpException {
         this.tqUrl = url;
         FormBody formBody = new FormBody.Builder()
                 .add("grant_type", "password")
                 .add("client_id", "2")
                 .add("client_secret", "93MBS86X7JrK4Mrr1mk4PKfo6b1zRVx9Mrmx0nTa")
-                .add("username", username)
-                .add("password", password)
+                .add("username", credentials.getUsername())
+                .add("password", credentials.getPassword())
                 .build();
 
         Request.Builder builder = new Request.Builder()

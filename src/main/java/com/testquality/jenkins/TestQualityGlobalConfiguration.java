@@ -1,6 +1,8 @@
 package com.testquality.jenkins;
 
+import com.testquality.jenkins.credentials.TestQualityBasicCredentials;
 import com.testquality.jenkins.exception.ClientException;
+import com.testquality.jenkins.exception.CredentialsException;
 import hudson.Extension;
 import hudson.util.FormValidation;
 import net.sf.json.JSONObject;
@@ -8,7 +10,6 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
-import static org.apache.commons.lang.StringUtils.isEmpty;
 import static org.apache.commons.lang.StringUtils.isNotBlank;
 
 @Extension
@@ -54,22 +55,14 @@ public class TestQualityGlobalConfiguration extends jenkins.model.GlobalConfigur
     ) {
 
         try {
-            validateInput(url, "Url cannot be empty");
-            validateInput(username, "Username cannot be empty");
-            validateInput(password, "Password cannot be empty");
-
-            TestQualityClientFactory.create(url, username, password);
+            TestQualityClientFactory.create(
+                    url, () -> new TestQualityBasicCredentials(username, password)
+            );
             return FormValidation.ok("Successful Connection");
-        } catch (FormValidation fv) {
-            return fv;
+        } catch (CredentialsException ce) {
+            return FormValidation.error(ce.getMessage());
         } catch (ClientException e) {
             return FormValidation.error("Connection error : " + e.getMessage());
-        }
-    }
-
-    private void validateInput(String inp, String cause) throws FormValidation {
-        if (isEmpty(inp)) {
-            throw FormValidation.error(cause);
         }
     }
 

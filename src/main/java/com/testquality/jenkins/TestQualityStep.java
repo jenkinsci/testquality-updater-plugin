@@ -48,7 +48,7 @@ public class TestQualityStep extends Step {
     }
 
     @Extension(optional = true)
-    public static class DescriptorImpl extends StepDescriptor {
+    public static class DescriptorImpl extends StepDescriptor implements FormValidationDelegator {
 
         @Override
         public Set<? extends Class<?>> getRequiredContext() {
@@ -66,7 +66,7 @@ public class TestQualityStep extends Step {
         }
     }
 
-    public static class Execution extends SynchronousNonBlockingStepExecution<Boolean> implements FormValidationDelegator {
+    public static class Execution extends SynchronousNonBlockingStepExecution<Boolean> {
 
         protected transient TestQualityStep step;
 

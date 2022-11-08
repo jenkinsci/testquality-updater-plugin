@@ -1,5 +1,6 @@
 package com.testquality.jenkins;
 
+import com.testquality.jenkins.exception.CredentialsException;
 import com.testquality.jenkins.exception.HttpException;
 import hudson.FilePath;
 import hudson.Util;
@@ -69,7 +70,7 @@ public class TestResultsUploader {
         } catch (InterruptedException e) {
             listener.getLogger().println("Interupted, " + e.getMessage());
             return false;
-        } catch (JSONException | IOException | HttpException e) {
+        } catch (JSONException | IOException | HttpException | CredentialsException e) {
             listener.getLogger().println(e.getMessage());
             return false;
         }

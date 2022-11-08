@@ -5,6 +5,7 @@ import com.testquality.jenkins.exception.ClientException;
 import com.testquality.jenkins.exception.CredentialsException;
 import hudson.Extension;
 import hudson.util.FormValidation;
+import jenkins.model.GlobalConfiguration;
 import net.sf.json.JSONObject;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
@@ -13,7 +14,7 @@ import org.kohsuke.stapler.StaplerRequest;
 import static org.apache.commons.lang.StringUtils.isNotBlank;
 
 @Extension
-public class TestQualityGlobalConfiguration extends jenkins.model.GlobalConfiguration {
+public class TestQualityGlobalConfiguration extends GlobalConfiguration {
     private static final String PLUGIN_SHORTNAME = "testquality-updater";
     private static final String DEFAULT_URL = "https://api.testquality.com";
     private static final String DISPLAY_NAME = "TestQuality Updater";

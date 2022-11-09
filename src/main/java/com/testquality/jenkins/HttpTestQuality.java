@@ -27,15 +27,19 @@ import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredenti
 import com.testquality.jenkins.exception.HttpException;
 import hudson.util.ListBoxModel;
 import okhttp3.*;
-import org.apache.commons.lang.StringUtils;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import static org.apache.commons.lang.StringUtils.isBlank;
+import static org.apache.commons.lang.StringUtils.isNotBlank;
 
 /**
  *
@@ -49,24 +53,24 @@ public class HttpTestQuality implements TestQualityClient {
     private final OkHttpClient client; // = new OkHttpClient();
     private String tqUrl;
     private String authorization;
-    
+
     public HttpTestQuality() {
         this.client = new OkHttpClient.Builder()
                 .readTimeout(600, TimeUnit.SECONDS)
                 .writeTimeout(600, TimeUnit.SECONDS)
                 .build();
         //this.client.setConnectTimeout(30, TimeUnit.SECONDS);
-        
+
     }
-    
+
     public boolean isConnected() {
         if (authorization != null) {
-            return StringUtils.isBlank(authorization);
+            return isBlank(authorization);
         } else {
             return false;
         }
     }
-    
+
     public void connect(String url, StandardUsernamePasswordCredentials credentials) throws IOException, JSONException, HttpException {
         this.tqUrl = url;
         FormBody formBody = new FormBody.Builder()
@@ -99,23 +103,30 @@ public class HttpTestQuality implements TestQualityClient {
         }
         this.authorization = "Bearer " + obj.getString("access_token");
     }
-    
+
     @Override
-    public void getList(String type, String keyPrefix, ListBoxModel items, String selectedId, String projectId) 
+    public void getList(String type, String keyPrefix, ListBoxModel items, String selectedId, Map<String, String> params)
             throws IOException, JSONException, HttpException {
-        
+
         String url = this.tqUrl + "/api/" + type;
-        if (!StringUtils.isBlank(projectId)) {
-            url = url + "?project_id=" + projectId;
+
+        if (params != null) {
+            String query = params.entrySet()
+                    .stream()
+                    .map((e)-> e.getKey()+"=" + e.getValue())
+                    .collect(Collectors.joining("&"));
+            if (isNotBlank(query)) {
+                url += "?" + query;
+            }
         }
 
         Request.Builder builder = new Request.Builder()
             .url(url)
             .header("Accept", "application/json")
             .addHeader("Authorization", this.authorization);
-            
+
         Request request = builder.build();
-        
+
         long start = System.nanoTime();
         Response response = this.client.newCall(request).execute();
         long time = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
@@ -132,23 +143,24 @@ public class HttpTestQuality implements TestQualityClient {
             int key = arr.getJSONObject(i).getInt("key");
             int id = arr.getJSONObject(i).getInt("id");
             String idStr = Integer.toString(id);
-            
+
             items.add(new ListBoxModel.Option(String.format("%s%s %s", keyPrefix, key, name), idStr, idStr.equals(selectedId)));
         }
     }
-    
+
     @Override
-    public TestResult uploadFiles(List<File> files, String planId, String milestoneId) throws IOException, HttpException {
+    public TestResult uploadFiles(List<File> files, String projectId, String planId, String milestoneId) throws IOException, HttpException {
         if (files.isEmpty()) {
             throw new HttpException("No files selected for upload");
         }
-                
+        String calculatedPlanId = isDefined(planId) ? planId : getRootPlan(projectId);
+
         MediaType mediaType = MediaType.parse("text/xml");
-        String url = this.tqUrl + "/api/plan/" + planId + "/junit_xml";
-        
+        String url = this.tqUrl + "/api/plan/" + calculatedPlanId + "/junit_xml";
+
         MultipartBody.Builder requestBodyBuilder = new MultipartBody.Builder();
         requestBodyBuilder.setType(MultipartBody.FORM);
-        if (!StringUtils.isBlank(milestoneId) && !milestoneId.equals("-1")) {
+        if (isDefined(milestoneId)) {
             requestBodyBuilder.addFormDataPart("milestone_id", milestoneId);
         }
         for (File file : files) {
@@ -162,7 +174,7 @@ public class HttpTestQuality implements TestQualityClient {
                .url(url)
                .post(requestBody)
                .build();
-        
+
         long start = System.nanoTime();
         Response response = this.client.newCall(request).execute();
         long time = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
@@ -170,7 +182,7 @@ public class HttpTestQuality implements TestQualityClient {
         if (!response.isSuccessful()) {
             throw new HttpException(response, time, response.body().string());
         }
-        
+
         TestResult result = new TestResult();
         JSONObject obj = new JSONObject(response.body().string());
         if (obj.has("total")) {
@@ -199,5 +211,19 @@ public class HttpTestQuality implements TestQualityClient {
             result.run_url = obj.getString("run_url");
         }
         return result;
+    }
+
+    private String getRootPlan(String projectId) throws IOException, JSONException, HttpException {
+        ListBoxModel items = new ListBoxModel();
+        Map<String, String> params = new HashMap<>();
+        params.put("project_id", projectId);
+        params.put("is_root", "true");
+
+        getList("plan", "", items, null, params);
+
+        return items.iterator().next().value;
+    }
+    private boolean isDefined(String v){
+        return isNotBlank(v) && !v.equals("-1");
     }
 }

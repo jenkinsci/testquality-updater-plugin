@@ -14,7 +14,7 @@ pipeline {
         stage('junit') {
             steps {
                 sh 'mvn test'
-                testQuality milestone: '-1', plan: '1', project: '1', testResults: 'target/surefire-reports/*'
+                testQuality milestone: '-1', cycle: '1', project: '1', testResults: 'target/surefire-reports/*'
             }
         }
     }

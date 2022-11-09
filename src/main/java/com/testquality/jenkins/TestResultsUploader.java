@@ -51,6 +51,7 @@ public class TestResultsUploader {
                             expandTestResults,
                             buildTime,
                             timeOnMaster,
+                            this.project,
                             this.plan,
                             this.milestone
                     )
@@ -82,18 +83,21 @@ public class TestResultsUploader {
         private final String testResults;
         private final long buildTime;
         private final long nowMaster;
+        private final String project;
         private final String plan;
         private final String milestone;
 
         private ParseResultCallable(String testResults,
                                     long buildTime,
                                     long nowMaster,
+                                    String project,
                                     String plan,
                                     String milestone) {
             this.testResults = testResults;
             this.buildTime = buildTime;
             this.nowMaster = nowMaster;
             this.plan = plan;
+            this.project = project;
             this.milestone = milestone;
         }
 
@@ -122,7 +126,7 @@ public class TestResultsUploader {
                 }
 
                 TestQualityClient testQuality = TestQualityClientFactory.create();
-                return testQuality.uploadFiles(listFiles, this.plan, this.milestone);
+                return testQuality.uploadFiles(listFiles, this.project, this.plan, this.milestone);
             }
             return result;
         }

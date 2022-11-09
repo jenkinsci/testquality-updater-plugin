@@ -12,6 +12,9 @@ import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.QueryParameter;
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -48,7 +51,7 @@ public class TestQualityFormValidator implements FormValidator {
             items.add(new ListBoxModel.Option("", "", true));
         }
 
-        return getItems("project", "PJ", items, savedProject, "");
+        return getItems("project", "PJ", items, savedProject, null);
     }
 
     @Override
@@ -60,7 +63,13 @@ public class TestQualityFormValidator implements FormValidator {
             return items;
         }
 
-        return getItems("plan", "P", items, savedPlan, project);
+        Map<String, String> params = new HashMap<>();
+        params.put("project_id", project);
+        params.put("is_root", "false");
+
+        items.add("Use Root Cycle", "-1");
+
+        return getItems("plan", "P", items, savedPlan, params);
     }
 
     @Override
@@ -76,7 +85,7 @@ public class TestQualityFormValidator implements FormValidator {
 
         items.add("Optionally Pick Milestone", "-1");
 
-        return getItems("milestone", "M", items, savedMilestone, project);
+        return getItems("milestone", "M", items, savedMilestone, Collections.singletonMap("project_id", project));
     }
 
     @Override
@@ -89,11 +98,11 @@ public class TestQualityFormValidator implements FormValidator {
         return FilePath.validateFileMask(project.getSomeWorkspace(), value);
     }
 
-    private ListBoxModel getItems(String type, String keyPrefix, ListBoxModel items, String id, String projectId) {
+    private ListBoxModel getItems(String type, String keyPrefix, ListBoxModel items, String id, Map<String, String> params) {
 
         try {
             TestQualityClient testQuality = TestQualityClientFactory.create();
-            testQuality.getList(type, keyPrefix, items, id, projectId);
+            testQuality.getList(type, keyPrefix, items, id, params);
         } catch (JSONException | IOException | HttpException e) {
             LOGGER.log(Level.SEVERE, "ERROR: Filling List Box, " + e.getMessage(), e);
         }

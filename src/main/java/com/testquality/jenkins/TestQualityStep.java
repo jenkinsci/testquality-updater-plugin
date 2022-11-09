@@ -11,27 +11,34 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
+import org.kohsuke.stapler.DataBoundSetter;
 
 public class TestQualityStep extends Step {
     private final String project;
-    private final String plan;
-    private final String milestone;
+    private String cycle;
+    private String milestone;
     private final String testResults;
 
     @DataBoundConstructor
-    public TestQualityStep(String project, String plan, String milestone, String testResults) {
+    public TestQualityStep(String project, String testResults) {
         this.project = project;
-        this.plan = plan;
-        this.milestone = milestone;
         this.testResults = testResults;
+    }
+
+    @DataBoundSetter public void setCycle(String cycle) {
+        this.cycle = cycle;
+    }
+
+    @DataBoundSetter public void setMilestone(String milestone) {
+        this.milestone = milestone;
     }
 
     public String getProject() {
         return project;
     }
 
-    public String getPlan() {
-        return plan;
+    public String getCycle() {
+        return cycle;
     }
 
     public String getMilestone() {
@@ -85,7 +92,7 @@ public class TestQualityStep extends Step {
             Objects.requireNonNull(listener, "Task listener can not be null");
 
             TestResultsUploader resultsUploader = new TestResultsUploader(
-                    step.getPlan(),
+                    step.getCycle(),
                     step.getMilestone(),
                     step.testResults,
                     step.project

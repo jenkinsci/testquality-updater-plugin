@@ -1,17 +1,28 @@
 package com.testquality.jenkins;
 
-import com.testquality.jenkins.credentials.TestQualityBasicCredentials;
+import com.cloudbees.plugins.credentials.CredentialsMatchers;
+import com.cloudbees.plugins.credentials.CredentialsProvider;
+import com.cloudbees.plugins.credentials.common.StandardUsernameListBoxModel;
+import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
+import com.cloudbees.plugins.credentials.domains.DomainRequirement;
+import com.cloudbees.plugins.credentials.domains.URIRequirementBuilder;
+import static com.cloudbees.plugins.credentials.domains.URIRequirementBuilder.fromUri;
 import com.testquality.jenkins.exception.ClientException;
 import com.testquality.jenkins.exception.CredentialsException;
 import hudson.Extension;
+import hudson.model.Job;
 import hudson.util.FormValidation;
+import hudson.util.ListBoxModel;
+import java.util.List;
 import jenkins.model.GlobalConfiguration;
+import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
+import static org.apache.commons.lang.StringUtils.isBlank;
+import static org.apache.commons.lang.StringUtils.isNotBlank;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
-import static org.apache.commons.lang.StringUtils.isNotBlank;
 
 @Extension
 public class TestQualityGlobalConfiguration extends GlobalConfiguration {
@@ -19,8 +30,7 @@ public class TestQualityGlobalConfiguration extends GlobalConfiguration {
     private static final String DEFAULT_URL = "https://api.testquality.com";
     private static final String DISPLAY_NAME = "TestQuality Updater";
     private String url = DEFAULT_URL;
-    private String username;
-    private String password;
+    private String credentialsId;
 
     @DataBoundConstructor
     public TestQualityGlobalConfiguration() {
@@ -31,12 +41,8 @@ public class TestQualityGlobalConfiguration extends GlobalConfiguration {
         return url;
     }
 
-    public String getUsername() {
-        return username;
-    }
-
-    public String getPassword() {
-        return password;
+    public String getCredentialsId() {
+        return credentialsId;
     }
 
     @Override
@@ -51,14 +57,16 @@ public class TestQualityGlobalConfiguration extends GlobalConfiguration {
 
     public FormValidation doTestConnection(
             @QueryParameter("url") String url,
-            @QueryParameter("username") String username,
-            @QueryParameter("password") String password
+            @QueryParameter("credentialsId") String credentialsId
     ) {
+        if (isBlank(credentialsId)) {
+            return FormValidation.error("Credentials are not specified");
+        }
 
         try {
-            TestQualityClientFactory.create(
-                    url, () -> new TestQualityBasicCredentials(username, password)
-            );
+            StandardUsernamePasswordCredentials standardCredentials = getCredentials(url, credentialsId);
+
+            TestQualityClientFactory.create(url, standardCredentials);
             return FormValidation.ok("Successful Connection");
         } catch (CredentialsException ce) {
             return FormValidation.error(ce.getMessage());
@@ -67,11 +75,21 @@ public class TestQualityGlobalConfiguration extends GlobalConfiguration {
         }
     }
 
+    public ListBoxModel doFillCredentialsIdItems(@QueryParameter String url,
+                                                @QueryParameter String credentialsId) {
+        Job owner = null;
+
+        List<DomainRequirement> apiEndpoint = URIRequirementBuilder.fromUri(url).build();
+
+        return new StandardUsernameListBoxModel()
+                .withEmptySelection()
+                .withAll(CredentialsProvider.lookupCredentials(StandardUsernamePasswordCredentials.class, owner, null, apiEndpoint));
+    }
+
     @Override
     public boolean configure(StaplerRequest req, JSONObject formData) throws FormException {
         this.url = formData.getString("url");
-        this.username = formData.getString("username");
-        this.password = formData.getString("password");
+        this.credentialsId = formData.getString("credentialsId");
         return super.configure(req,formData);
     }
 
@@ -79,8 +97,21 @@ public class TestQualityGlobalConfiguration extends GlobalConfiguration {
         return all().get(TestQualityGlobalConfiguration.class);
     }
 
-    public boolean isCredentialsExist() {
-        return isNotBlank(url) && isNotBlank(username) && isNotBlank(password);
+    public StandardUsernamePasswordCredentials getCredentials() {
+        return getCredentials(this.url, this.credentialsId);
+    }
+
+    public boolean isConfigured() {
+        return isNotBlank(url) && isNotBlank(credentialsId);
+    }
+    private StandardUsernamePasswordCredentials getCredentials(String url, String credentialsId) {
+        return CredentialsMatchers.firstOrNull(
+                CredentialsProvider
+                .lookupCredentials(StandardUsernamePasswordCredentials.class,
+                        Jenkins.getInstance(), null,
+                        fromUri(url).build()),
+                CredentialsMatchers.withId(credentialsId));
+
     }
 
 }

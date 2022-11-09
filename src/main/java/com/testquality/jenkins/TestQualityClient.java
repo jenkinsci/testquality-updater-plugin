@@ -1,6 +1,6 @@
 package com.testquality.jenkins;
 
-import com.testquality.jenkins.credentials.TestQualityCredentials;
+import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import com.testquality.jenkins.exception.HttpException;
 import hudson.util.ListBoxModel;
 import org.json.JSONException;
@@ -11,7 +11,7 @@ import java.util.List;
 
 public interface TestQualityClient {
 
-    void connect(String url, TestQualityCredentials credentials)
+    void connect(String url, StandardUsernamePasswordCredentials credentials)
             throws IOException, JSONException, HttpException;
 
     void getList(String type, String keyPrefix, ListBoxModel items, String selectedId, String projectId)

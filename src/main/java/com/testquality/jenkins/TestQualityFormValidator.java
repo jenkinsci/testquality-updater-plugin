@@ -25,7 +25,7 @@ public class TestQualityFormValidator implements FormValidator {
     public FormValidation doCheckProject(@QueryParameter("project") String project) {
         TestQualityGlobalConfiguration configuration = TestQualityGlobalConfiguration.get();
 
-        if (!configuration.isCredentialsExist()) return FormValidation.error(NO_CONNECTION);
+        if (!configuration.isConfigured()) return FormValidation.error(NO_CONNECTION);
 
         try {
             TestQualityClientFactory.create();
@@ -42,7 +42,7 @@ public class TestQualityFormValidator implements FormValidator {
 
         ListBoxModel items = new ListBoxModel();
 
-        if (!configuration.isCredentialsExist()) return items;
+        if (!configuration.isConfigured()) return items;
 
         if (StringUtils.isBlank(savedProject)) {
             items.add(new ListBoxModel.Option("", "", true));

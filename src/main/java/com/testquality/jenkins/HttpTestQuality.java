@@ -23,7 +23,7 @@
  */
 package com.testquality.jenkins;
 
-import com.testquality.jenkins.credentials.TestQualityCredentials;
+import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import com.testquality.jenkins.exception.HttpException;
 import hudson.util.ListBoxModel;
 import okhttp3.*;
@@ -67,14 +67,14 @@ public class HttpTestQuality implements TestQualityClient {
         }
     }
     
-    public void connect(String url, TestQualityCredentials credentials) throws IOException, JSONException, HttpException {
+    public void connect(String url, StandardUsernamePasswordCredentials credentials) throws IOException, JSONException, HttpException {
         this.tqUrl = url;
         FormBody formBody = new FormBody.Builder()
                 .add("grant_type", "password")
                 .add("client_id", "2")
                 .add("client_secret", "93MBS86X7JrK4Mrr1mk4PKfo6b1zRVx9Mrmx0nTa")
                 .add("username", credentials.getUsername())
-                .add("password", credentials.getPassword())
+                .add("password", credentials.getPassword().getPlainText())
                 .build();
 
         Request.Builder builder = new Request.Builder()
@@ -100,6 +100,7 @@ public class HttpTestQuality implements TestQualityClient {
         this.authorization = "Bearer " + obj.getString("access_token");
     }
     
+    @Override
     public void getList(String type, String keyPrefix, ListBoxModel items, String selectedId, String projectId) 
             throws IOException, JSONException, HttpException {
         
@@ -136,6 +137,7 @@ public class HttpTestQuality implements TestQualityClient {
         }
     }
     
+    @Override
     public TestResult uploadFiles(List<File> files, String planId, String milestoneId) throws IOException, HttpException {
         if (files.isEmpty()) {
             throw new HttpException("No files selected for upload");

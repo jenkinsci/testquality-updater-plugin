@@ -41,11 +41,7 @@ public class TestQualityFormValidator implements FormValidator {
     @Override
     public ListBoxModel doFillProjectItems(@QueryParameter("project") String savedProject) {
 
-        TestQualityGlobalConfiguration configuration = TestQualityGlobalConfiguration.get();
-
         ListBoxModel items = new ListBoxModel();
-
-        if (!configuration.isConfigured()) return items;
 
         if (StringUtils.isBlank(savedProject)) {
             items.add(new ListBoxModel.Option("", "", true));
@@ -99,6 +95,10 @@ public class TestQualityFormValidator implements FormValidator {
     }
 
     private ListBoxModel getItems(String type, String keyPrefix, ListBoxModel items, String id, Map<String, String> params) {
+
+        if (!TestQualityGlobalConfiguration.get().isConfigured()) {
+            return new ListBoxModel();
+        }
 
         try {
             TestQualityClient testQuality = TestQualityClientFactory.create();

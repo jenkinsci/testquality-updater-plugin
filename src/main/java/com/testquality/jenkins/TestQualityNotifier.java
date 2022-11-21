@@ -37,7 +37,6 @@ import hudson.tasks.Publisher;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import java.io.IOException;
-import java.util.logging.Logger;
 
 /**
  *
@@ -99,10 +98,8 @@ public class TestQualityNotifier extends Notifier {
 
     @Extension
     public static class DescriptorImpl extends BuildStepDescriptor<Publisher> implements FormValidationDelegator {
-        public static final String NO_CONNECTION = "Please fill in connection details in Manage Jenkins -> Configure System";
         public static final String DISPLAY_NAME = "TestQuality Updater";
-        private static final Logger LOGGER = Logger.getLogger("TestQualityPlugin.log");
-        
+
         /**
          * In order to load the persisted global configuration, you have to 
          * call load() in the constructor.

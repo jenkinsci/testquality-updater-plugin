@@ -6,22 +6,25 @@ import com.cloudbees.plugins.credentials.common.StandardUsernameListBoxModel;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 import com.cloudbees.plugins.credentials.domains.URIRequirementBuilder;
-import static com.cloudbees.plugins.credentials.domains.URIRequirementBuilder.fromUri;
 import com.testquality.jenkins.exception.ClientException;
 import com.testquality.jenkins.exception.CredentialsException;
 import hudson.Extension;
 import hudson.model.Job;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
-import java.util.List;
 import jenkins.model.GlobalConfiguration;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
-import static org.apache.commons.lang.StringUtils.isBlank;
-import static org.apache.commons.lang.StringUtils.isNotBlank;
+import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
+
+import java.util.List;
+
+import static com.cloudbees.plugins.credentials.domains.URIRequirementBuilder.fromUri;
+import static org.apache.commons.lang.StringUtils.isBlank;
+import static org.apache.commons.lang.StringUtils.isNotBlank;
 
 
 @Extension
@@ -105,12 +108,18 @@ public class TestQualityGlobalConfiguration extends GlobalConfiguration {
         return isNotBlank(url) && isNotBlank(credentialsId);
     }
     private StandardUsernamePasswordCredentials getCredentials(String url, String credentialsId) {
+        if (StringUtils.isEmpty(credentialsId)) {
+            throw new CredentialsException("Please fill in connection details in Manage Jenkins -> Configure System");
+        }
         return CredentialsMatchers.firstOrNull(
                 CredentialsProvider
-                .lookupCredentials(StandardUsernamePasswordCredentials.class,
-                        Jenkins.getInstance(), null,
-                        fromUri(url).build()),
-                CredentialsMatchers.withId(credentialsId));
+                        .lookupCredentials(
+                                StandardUsernamePasswordCredentials.class,
+                                Jenkins.getInstance(), null,
+                                fromUri(url).build()
+                        ),
+                CredentialsMatchers.withId(credentialsId)
+        );
 
     }
 

@@ -25,7 +25,6 @@ package com.testquality.jenkins;
 
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import com.testquality.jenkins.exception.HttpException;
-import hudson.util.ListBoxModel;
 import okhttp3.*;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -33,11 +32,13 @@ import org.json.JSONObject;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+
 import static org.apache.commons.lang.StringUtils.isBlank;
 import static org.apache.commons.lang.StringUtils.isNotBlank;
 
@@ -46,11 +47,7 @@ import static org.apache.commons.lang.StringUtils.isNotBlank;
  * @author jamespitts
  */
 public class HttpTestQuality implements TestQualityClient {
-
-    /**
-     *
-     */
-    private final OkHttpClient client; // = new OkHttpClient();
+    private final OkHttpClient client;
     private String tqUrl;
     private String authorization;
 
@@ -59,8 +56,6 @@ public class HttpTestQuality implements TestQualityClient {
                 .readTimeout(600, TimeUnit.SECONDS)
                 .writeTimeout(600, TimeUnit.SECONDS)
                 .build();
-        //this.client.setConnectTimeout(30, TimeUnit.SECONDS);
-
     }
 
     public boolean isConnected() {
@@ -105,7 +100,7 @@ public class HttpTestQuality implements TestQualityClient {
     }
 
     @Override
-    public void getList(String type, String keyPrefix, ListBoxModel items, String selectedId, Map<String, String> params)
+    public List<TestQualityBaseResponse> getList(String type,  Map<String, String> params)
             throws IOException, JSONException, HttpException {
 
         String url = this.tqUrl + "/api/" + type;
@@ -137,15 +132,20 @@ public class HttpTestQuality implements TestQualityClient {
 
         JSONObject obj = new JSONObject(response.body().string());
         JSONArray arr = obj.getJSONArray("data");
+
+        List<TestQualityBaseResponse> listObjects = new ArrayList<>();
+
         for (int i = 0; i < arr.length(); i++)
         {
-            String name = arr.getJSONObject(i).getString("name");
-            int key = arr.getJSONObject(i).getInt("key");
-            int id = arr.getJSONObject(i).getInt("id");
-            String idStr = Integer.toString(id);
-
-            items.add(new ListBoxModel.Option(String.format("%s%s %s", keyPrefix, key, name), idStr, idStr.equals(selectedId)));
+            TestQualityBaseResponse r = new TestQualityBaseResponse();
+            JSONObject jObj = arr.getJSONObject(i);
+            r.setKey(jObj.getInt("key"));
+            r.setId(jObj.getInt("id"));
+            r.setName(jObj.getString("name"));
+            listObjects.add(r);
         }
+
+        return listObjects;
     }
 
     @Override
@@ -200,13 +200,6 @@ public class HttpTestQuality implements TestQualityClient {
         if (obj.has("time")) {
             result.time = obj.getString("time");
         }
-        // not used
-        //if (obj.has("start_time")) {
-        //    result.start_time = obj.getString("start_time");
-        //}
-        //if (obj.has("end_time")) {
-        //    result.end_time = obj.getString("end_time");
-        //}
         if (obj.has("run_url")) {
             result.run_url = obj.getString("run_url");
         }
@@ -214,14 +207,12 @@ public class HttpTestQuality implements TestQualityClient {
     }
 
     private String getRootPlan(String projectId) throws IOException, JSONException, HttpException {
-        ListBoxModel items = new ListBoxModel();
         Map<String, String> params = new HashMap<>();
         params.put("project_id", projectId);
         params.put("is_root", "true");
 
-        getList("plan", "", items, null, params);
-
-        return items.iterator().next().value;
+        List<TestQualityBaseResponse> response = getList("plan", params);
+        return String.valueOf(response.get(0).getId());
     }
     private boolean isDefined(String v){
         return isNotBlank(v) && !v.equals("-1");

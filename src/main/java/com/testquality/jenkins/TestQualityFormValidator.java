@@ -107,7 +107,7 @@ public class TestQualityFormValidator implements FormValidator {
                     .forEach(resp -> {
                         String name = String.format("%s%s %s", keyPrefix, resp.getKey(), resp.getName());
                         String idStr = Integer.toString(resp.getId());
-                        items.add(new ListBoxModel.Option(name, id, idStr.equals(id)));
+                        items.add(new ListBoxModel.Option(name, idStr, idStr.equals(id)));
                     });
         } catch (JSONException | IOException | HttpException e) {
             LOGGER.log(Level.SEVERE, "ERROR: Filling List Box, " + e.getMessage(), e);

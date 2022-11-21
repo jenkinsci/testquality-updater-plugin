@@ -1,6 +1,7 @@
 package com.testquality.jenkins;
 
 import com.google.common.collect.ImmutableMap;
+import com.testquality.jenkins.exception.ClientException;
 import com.testquality.jenkins.exception.CredentialsException;
 import com.testquality.jenkins.exception.HttpException;
 import hudson.Extension;
@@ -8,18 +9,20 @@ import hudson.FilePath;
 import hudson.model.Failure;
 import hudson.model.Run;
 import hudson.model.TaskListener;
+import hudson.util.FormValidation;
 import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.plugins.workflow.steps.*;
 import org.json.JSONException;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
+import org.kohsuke.stapler.QueryParameter;
 
 import java.io.IOException;
 import java.util.*;
 
 public class TestQualityStep extends Step {
     private final String project;
-    private String plan;
+    private String cycle;
     private String milestone;
     private final String testResults;
 
@@ -29,8 +32,8 @@ public class TestQualityStep extends Step {
         this.testResults = testResults;
     }
 
-    @DataBoundSetter public void setPlan(String plan) {
-        this.plan = plan;
+    @DataBoundSetter public void setCycle(String cycle) {
+        this.cycle = cycle;
     }
 
     @DataBoundSetter public void setMilestone(String milestone) {
@@ -41,8 +44,8 @@ public class TestQualityStep extends Step {
         return project;
     }
 
-    public String getPlan() {
-        return plan;
+    public String getCycle() {
+        return cycle;
     }
 
     public String getMilestone() {
@@ -60,7 +63,9 @@ public class TestQualityStep extends Step {
 
     // TODO: fix descriptor
     @Extension(optional = true)
-    public static class DescriptorImpl extends StepDescriptor implements FormValidationDelegator {
+    public static class DescriptorImpl extends StepDescriptor {
+
+        private static final String NO_CONNECTION = "Please fill in connection details in Manage Jenkins -> Configure System";
 
         @Override
         public Set<? extends Class<?>> getRequiredContext() {
@@ -75,6 +80,28 @@ public class TestQualityStep extends Step {
         @Override
         public String getDisplayName() {
             return "Upload test results to TestQuality";
+        }
+
+        public FormValidation doCheckProject(@QueryParameter String value) {
+
+            if (StringUtils.isEmpty(value)) return FormValidation.error("Project cannot be empty");
+
+            TestQualityGlobalConfiguration configuration = TestQualityGlobalConfiguration.get();
+
+            if (!configuration.isConfigured()) return FormValidation.error(NO_CONNECTION);
+
+            try {
+                TestQualityClientFactory.create();
+            } catch (JSONException | HttpException | ClientException e) {
+                return FormValidation.error("Connection error : " + e.getMessage());
+            }
+            return FormValidation.ok();
+        }
+
+        public FormValidation doCheckTestResults(@QueryParameter String value) {
+            return StringUtils.isNotEmpty(value)
+                    ? FormValidation.ok()
+                    : FormValidation.error("Test results cannot be empty");
         }
     }
 
@@ -120,7 +147,7 @@ public class TestQualityStep extends Step {
 
                 String cycle = "-1";
 
-                if (StringUtils.isNotEmpty(step.plan)) {
+                if (StringUtils.isNotEmpty(step.cycle)) {
 
                     Map<String, String> params = ImmutableMap.of(
                             "project_id", projectId,
@@ -128,8 +155,8 @@ public class TestQualityStep extends Step {
                     );
                     cycle = getFirstIdByNameOrThrow(
                             client.cycles(params),
-                            step.plan,
-                            String.format("Cycles with name {%s} doesn't exist", step.plan)
+                            step.cycle,
+                            String.format("Cycles with name {%s} doesn't exist", step.cycle)
                     );
 
                 }

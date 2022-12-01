@@ -24,11 +24,11 @@ THE SOFTWARE.
 -->
 
 <?jelly escape-by-default='true'?>
-<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+<j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form">
     <f:entry title="Project" field="project">
         <f:select />
     </f:entry>
-    <f:entry title="Test Plan" field="plan">
+    <f:entry title="Cycle" field="plan">
       <f:select />
     </f:entry>
     <f:entry title="Milestone" field="milestone">

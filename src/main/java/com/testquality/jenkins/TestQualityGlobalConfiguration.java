@@ -93,6 +93,7 @@ public class TestQualityGlobalConfiguration extends GlobalConfiguration {
     public boolean configure(StaplerRequest req, JSONObject formData) throws FormException {
         this.url = formData.getString("url");
         this.credentialsId = formData.getString("credentialsId");
+        save();
         return super.configure(req,formData);
     }
 

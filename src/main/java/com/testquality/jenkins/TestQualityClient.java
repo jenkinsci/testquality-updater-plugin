@@ -2,7 +2,6 @@ package com.testquality.jenkins;
 
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import com.testquality.jenkins.exception.HttpException;
-import hudson.util.ListBoxModel;
 import org.json.JSONException;
 
 import java.io.File;
@@ -15,10 +14,22 @@ public interface TestQualityClient {
     void connect(String url, StandardUsernamePasswordCredentials credentials)
             throws IOException, JSONException, HttpException;
 
-    void getList(String type, String keyPrefix, ListBoxModel items, String selectedId, Map<String, String> params)
+    List<TestQualityBaseResponse> getList(String type, Map<String, String> params)
             throws IOException, JSONException, HttpException;
 
     TestResult uploadFiles(List<File> files, String projectId, String planId, String milestoneId)
             throws IOException, HttpException;
+
+    default List<TestQualityBaseResponse> projects() throws IOException {
+        return getList("project", null);
+    }
+
+    default List<TestQualityBaseResponse> milestones(Map<String, String> params) throws IOException {
+        return getList("milestone", params);
+    }
+
+    default List<TestQualityBaseResponse> cycles(Map<String, String> params) throws IOException {
+        return getList("plan", params);
+    }
 
 }
